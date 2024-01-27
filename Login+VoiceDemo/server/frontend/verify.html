@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Capstone VA2FA - Verification</title>
+    <link rel="shortcut icon" type="image/x-icon" href="favicon.png">
+    <link type="text/css" rel="stylesheet" href="common.css">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons">
+</head>
+
+<body>
+
+    <div class="content">
+        <div class='voice-recorder'>
+            <i class="material-icons">lock_outline</i>
+            <h2> Two Factor Authentication</h2>
+            <br>
+
+            <div class="button-container">
+                <button id="recordButton" class="button record-button">Record</button>
+                <button id="stopButton" class="button stop-button">Stop</button>
+            </div>
+            <br>
+            
+            <p class="description">
+                <strong> Simple Voice Recording Demo, to be used with 2FA.
+                    Voice recording stored in .wav filetype</strong>
+            </p>
+
+            <script src="https://cdn.rawgit.com/mattdiamond/Recorderjs/08e7abd9/dist/recorder.js"></script>
+            <script src="common.js"></script>
+        </div>
+    </div>
+
+</body>
+
+</html>
