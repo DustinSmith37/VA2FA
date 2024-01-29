@@ -2,55 +2,48 @@
 #Audio File Pre-Processor for AI training dataset
 #Primary resource for creation: https://towardsdatascience.com/how-to-build-a-neural-network-for-voice-classification-5e2810fe1efa
 
+
 import os as os
 import pandas as pd
 import numpy as np
-import librosa as librosa
-from sklearn.preprocessing import LabelEncoder, StandardScaler
-from keras.src.utils.np_utils import to_categorical
-#import matplotlib.pyplot as plt
 
-def pullDefaultUsersData(filePath: str = "./DefaultUsers"):
+
+def audioProcessingFromDirectory(verbose=False, filePath: str = "./DefaultUsers"):
+    if verbose: print("Processing")
     #grab files from directory, later will need to pull from somewhere else
-    #print(filePath)
-    fileList = os.listdir(filePath+"/Train")
+    fileList = os.listdir(filePath)
     #print(fileList) 
     #load into pandas data frame data structure
-    trainDefaultUsers = pd.DataFrame(fileList)
+    dataframe = pd.DataFrame(fileList)
     # Renaming the column name to file
-    trainDefaultUsers = trainDefaultUsers.rename(columns={0:'file'})
+    dataframe = dataframe.rename(columns={0:'file'})
+
     # We create an empty list where we will append all the speakers ids for each row of our dataframe by slicing the file name since we know the id is the first number before the hash
     speaker = []
-    for i in range(len(trainDefaultUsers)):
-        speaker.append(trainDefaultUsers['file'][i].split('-')[0])
-    # We now assign the speaker to a new column 
-    trainDefaultUsers['speaker'] = speaker
-    # print(trainDefaultUsers.head())
+    for i in range(len(dataframe)):
+        speaker.append(dataframe['file'][i].split('-')[0])
 
-    #repeat for validating and testing data
-    fileList = os.listdir(filePath+"/Validate")
-    validDefaultUsers = pd.DataFrame(fileList)
-    validDefaultUsers = validDefaultUsers.rename(columns={0:'file'})
-    speaker = []
-    for i in range(len(validDefaultUsers)):
-        speaker.append(validDefaultUsers['file'][i].split('-')[0])
-    validDefaultUsers['speaker'] = speaker
-    # print(validDefaultUsers.head())
+    #We now assign the speaker to a new column 
+    dataframe['speaker'] = speaker
+    if verbose: print("Extracting")
+    #Now we process the data in the dataframe with the extract features function
+    dataframeProcessed = dataframe.apply(extractFeatures, directory=filePath, axis=1)
+    if verbose: print("Slicing")
+    dataProcessedList = []
+    for i in range(len(dataframeProcessed)):
+        dataProcessedList.append(np.concatenate(dataframeProcessed[i]))
+    
+    dataProcessedArray = np.array(dataProcessedList)
+    dataNameArray = np.array(dataframe['speaker'])
+    
+    if verbose: print("Audio processing for directory "+filePath+" completed.")
+    return dataframeProcessed, dataProcessedArray, dataNameArray
 
-    fileList = os.listdir(filePath+"/Test")
-    testDefaultUsers = pd.DataFrame(fileList)
-    testDefaultUsers = testDefaultUsers.rename(columns={0:'file'})
-    speaker = []
-    for i in range(len(testDefaultUsers)):
-        speaker.append(testDefaultUsers['file'][i].split('-')[0])
-    testDefaultUsers['speaker'] = speaker
-    # print(testDefaultUsers.head())
-
-    return trainDefaultUsers,validDefaultUsers,testDefaultUsers
-
-def extractFeaturesTrain(dataframe, directory):
+def extractFeatures(dataframe, directory):
+    import librosa as librosa
+    import numpy as np
     # Sets the name to be the path to where the individual file is
-    fileName = "./DefaultUsers/" + directory +'/'+str(dataframe.file)
+    fileName = directory +'/'+str(dataframe.file)
     # Loads the audio file as a floating point time series and assigns the default sample rate
     # Sample rate is set to 22050 by default
     X, sample_rate = librosa.load(fileName, res_type='kaiser_fast')
@@ -68,86 +61,49 @@ def extractFeaturesTrain(dataframe, directory):
     tonnetz = np.mean(librosa.feature.tonnetz(y=librosa.effects.harmonic(X), sr=sample_rate).T,axis=0)
     return mfccs, chroma, mel, contrast, tonnetz
 
-def main():
-    print("Main Code Beginning!")
+def userDataPreProcessing(verbose: bool = False, filePath: str = "./DefaultUsers", saveFile: str = "defaultUserData.npz"):
+    if verbose: print("Processing Training Data")
+    trainDataframe, trainDataArray, trainNameArray = audioProcessingFromDirectory(verbose,filePath+"/Train")
+    if verbose: print("Processing Validation Data")
+    validDataframe, validDataArray, validNameArray = audioProcessingFromDirectory(verbose,filePath+"/Validate")
+    if verbose: print("Processing Testing Data")
+    testDataframe, testDataArray, testNameArray = audioProcessingFromDirectory(verbose,filePath+"/Test")
 
-    trainDF,validDF,testDF = pullDefaultUsersData()
-
-    print("Default User Data Retrieved")
-
-    trainFeaturesProcessed = trainDF.apply(extractFeaturesTrain, directory="Train", axis=1)
-    validFeaturesProcessed = validDF.apply(extractFeaturesTrain, directory="Validate", axis=1)
-    testFeaturesProcessed = testDF.apply(extractFeaturesTrain, directory="Test", axis=1)
-
-    print("Features Processed")
-    
-    trainFeaturesList = []
-    for i in range(0, len(trainFeaturesProcessed)):
-        trainFeaturesList.append(np.concatenate((
-            trainFeaturesProcessed[i][0],
-            trainFeaturesProcessed[i][1], 
-            trainFeaturesProcessed[i][2], 
-            trainFeaturesProcessed[i][3],
-            trainFeaturesProcessed[i][4]), axis=0))
-    
-    validFeaturesList = []
-    for i in range(0, len(validFeaturesProcessed)):
-        validFeaturesList.append(np.concatenate((
-            validFeaturesProcessed[i][0],
-            validFeaturesProcessed[i][1], 
-            validFeaturesProcessed[i][2], 
-            validFeaturesProcessed[i][3],
-            validFeaturesProcessed[i][4]), axis=0))
-        
-    testFeaturesList = []
-    for i in range(0, len(testFeaturesProcessed)):
-        testFeaturesList.append(np.concatenate((
-            testFeaturesProcessed[i][0],
-            testFeaturesProcessed[i][1], 
-            testFeaturesProcessed[i][2], 
-            testFeaturesProcessed[i][3],
-            testFeaturesProcessed[i][4]), axis=0))
-
-    #create data and names arrays
-    trainDataArray = np.array(trainFeaturesList)
-    validDataArray = np.array(validFeaturesList)
-    testDataArray = np.array(testFeaturesList)
-    trainNameArray = np.array(trainDF['speaker'])
-    validNameArray = np.array(validDF['speaker'])
-
-    # Hot encoding names
-    lb = LabelEncoder()
-    trainNameArray = to_categorical(lb.fit_transform(trainNameArray))
-    validNameArray = to_categorical(lb.fit_transform(validNameArray))
-    # Scale data arrays
-    ss = StandardScaler()
-    trainDataArray = ss.fit_transform(trainDataArray)
-    validDataArray = ss.transform(validDataArray)
-    testDataArray = ss.transform(testDataArray)
-
-    print("Arrays created and data scaled, AI setup beginning")
-
-    print("Attempting a save and load first to check results")
-
-    np.savez("defaultUserData.npz",trainDataArray=trainDataArray,\
+    if verbose: print("Saving Arrays To File")
+    np.savez(saveFile,trainDataArray=trainDataArray,\
     validDataArray=validDataArray,testDataArray=testDataArray,\
     trainNameArray=trainNameArray,validNameArray=validNameArray)
 
-    print("Saved successfully, loading")
+    if verbose: print("Save Complete, Exiting Pre-Processing")
 
-    loadedData = np.load("defaultUserData.npz")
+def trainVoiceAI(verbose: bool = False, dataFile: str = "defaultUserData.npz"):
+    if verbose: print("Importing Data Set")
+    loadedData = np.load(dataFile)
+    print(len(loadedData["trainDataArray"]),len(loadedData["validDataArray"]),\
+          len(loadedData["trainNameArray"]),len(loadedData["validNameArray"]))
 
-    print("Loaded successfully, comparing training data array")
+    if verbose: print("Importing Libraries")
+    from sklearn.preprocessing import LabelEncoder, StandardScaler
+    from keras.src.utils.np_utils import to_categorical
+    from keras.models import Sequential
+    from keras.layers import Dense, Dropout  #, Activation, Flatten
+    from keras.callbacks import EarlyStopping
+    import matplotlib.pyplot as plt
 
-    print(trainDataArray)
-    print(loadedData["trainDataArray"])
+    if verbose: print("Encoding and Scaling Arrays")
+    # Hot encoding names
+    lb = LabelEncoder()
+    loadedData["trainNameArray"] = to_categorical(lb.fit_transform(loadedData["trainNameArray"]))
+    loadedData["validNameArray"] = to_categorical(lb.fit_transform(loadedData["validNameArray"]))
+    # Scale data arrays
+    ss = StandardScaler()
+    loadedData["trainDataArray"] = ss.fit_transform(loadedData["trainDataArray"])
+    loadedData["validDataArray"] = ss.transform(loadedData["validDataArray"])
+    loadedData["testDataArray"] = ss.transform(loadedData["testDataArray"])
 
-    #FROM HERE AND BELOW, WE ARE TRAINING THE AI. THIS IS ERRORING OUT, BUT HEY, WE SAVED THOSE WEIGHTS.
 
     # Now train the AI
-    from keras.models import Sequential
-    from keras.layers import Dense, Dropout, Activation, Flatten
-    from keras.callbacks import EarlyStopping
+    if verbose: print("Importing Complete, Beginning Setup")
     # Build a simple dense model with early stopping and softmax for categorical classification, remember we have 30 classes
     model = Sequential()
     model.add(Dense(193, input_shape=(193,), activation = 'relu'))
@@ -160,9 +116,12 @@ def main():
     model.compile(loss='categorical_crossentropy', metrics=['accuracy'], optimizer='adam')
     early_stop = EarlyStopping(monitor='val_loss', min_delta=0, patience=100, verbose=1, mode='auto')
 
-    print("Settings saved, launching training")
+    model.summary()
+    if verbose: print("Settings Saved, Launching Training")
 
-    history = model.fit(trainDataArray, trainNameArray, batch_size=256, epochs=100, validation_data=(validDataArray, validNameArray), callbacks=[early_stop])
+    history = model.fit(loadedData["trainDataArray"], loadedData["trainNameArray"], batch_size=256, epochs=100, validation_data=(loadedData["validDataArray"], loadedData["validNameArray"]), callbacks=[early_stop])
+
+    if verbose: print("Training Complete, Launching Results")
 
     # Check out our train accuracy and validation accuracy over epochs.
     train_accuracy = history.history['accuracy']
@@ -180,6 +139,17 @@ def main():
     plt.legend(fontsize = 18)
 
 
+def main(verbose: bool = False, skipProcessing: bool = True, filePath: str = "./DefaultUsers", dataFile: str = "defaultUserData.npz"):
+    if verbose: print("Main Code Beginning!")
+
+    if skipProcessing == False:
+        if verbose: print("Starting Data Processing")
+        userDataPreProcessing(verbose=verbose, filePath=filePath, saveFile=dataFile)
+    
+    if verbose: print("Starting Training Function")
+    trainVoiceAI(verbose=verbose,dataFile=dataFile)
+    
+    if verbose: print("Code Complete!")
 
 if __name__ == "__main__":
-    main()
+    main(verbose=True,skipProcessing=True,filePath="./DefaultUsers", dataFile = "defaultUserData.npz")
