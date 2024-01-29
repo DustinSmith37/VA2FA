@@ -78,10 +78,8 @@ def userDataPreProcessing(verbose: bool = False, filePath: str = "./DefaultUsers
 
 def trainVoiceAI(verbose: bool = False, dataFile: str = "defaultUserData.npz"):
     if verbose: print("Importing Data Set")
-    loadedData = np.load(dataFile)
-    print(len(loadedData["trainDataArray"]),len(loadedData["validDataArray"]),\
-          len(loadedData["trainNameArray"]),len(loadedData["validNameArray"]))
-
+    loadedData = np.load(dataFile, allow_pickle=True)
+    
     if verbose: print("Importing Libraries")
     from sklearn.preprocessing import LabelEncoder, StandardScaler
     from keras.src.utils.np_utils import to_categorical
@@ -93,14 +91,13 @@ def trainVoiceAI(verbose: bool = False, dataFile: str = "defaultUserData.npz"):
     if verbose: print("Encoding and Scaling Arrays")
     # Hot encoding names
     lb = LabelEncoder()
-    loadedData["trainNameArray"] = to_categorical(lb.fit_transform(loadedData["trainNameArray"]))
-    loadedData["validNameArray"] = to_categorical(lb.fit_transform(loadedData["validNameArray"]))
+    trainNameArray = to_categorical(lb.fit_transform(loadedData["trainNameArray"]))
+    validNameArray = to_categorical(lb.fit_transform(loadedData["validNameArray"]))
     # Scale data arrays
     ss = StandardScaler()
-    loadedData["trainDataArray"] = ss.fit_transform(loadedData["trainDataArray"])
-    loadedData["validDataArray"] = ss.transform(loadedData["validDataArray"])
-    loadedData["testDataArray"] = ss.transform(loadedData["testDataArray"])
-
+    trainDataArray = ss.fit_transform(loadedData["trainDataArray"])
+    validDataArray = ss.transform(loadedData["validDataArray"])
+    testDataArray = ss.transform(loadedData["testDataArray"])
 
     # Now train the AI
     if verbose: print("Importing Complete, Beginning Setup")
@@ -112,14 +109,15 @@ def trainVoiceAI(verbose: bool = False, dataFile: str = "defaultUserData.npz"):
     model.add(Dropout(0.25))
     model.add(Dense(128, activation = 'relu'))
     model.add(Dropout(0.5))
-    model.add(Dense(30, activation = 'softmax'))
+    model.add(Dense(10, activation = 'softmax')) #NOTE, WAS SET TO 30, NOW SET TO 10 FOR TESTING
     model.compile(loss='categorical_crossentropy', metrics=['accuracy'], optimizer='adam')
     early_stop = EarlyStopping(monitor='val_loss', min_delta=0, patience=100, verbose=1, mode='auto')
 
-    model.summary()
+    if verbose: print("Model Settings As Follows:")
+    if verbose: model.summary()
     if verbose: print("Settings Saved, Launching Training")
 
-    history = model.fit(loadedData["trainDataArray"], loadedData["trainNameArray"], batch_size=256, epochs=100, validation_data=(loadedData["validDataArray"], loadedData["validNameArray"]), callbacks=[early_stop])
+    history = model.fit(trainDataArray,trainNameArray, batch_size=256, epochs=100, validation_data=(validDataArray, validNameArray), callbacks=[early_stop])
 
     if verbose: print("Training Complete, Launching Results")
 
@@ -137,7 +135,12 @@ def trainVoiceAI(verbose: bool = False, dataFile: str = "defaultUserData.npz"):
     plt.ylabel('Categorical Crossentropy', fontsize = 18)
     plt.xticks(range(0,100,5), range(0,100,5))
     plt.legend(fontsize = 18)
+    #plt.show()
 
+    # We get our predictions from the test data
+    predictions=model.predict(testDataArray)
+    predictedUsers=lb.inverse_transform(np.argmax(predictions,axis=1))
+    print(predictedUsers)
 
 def main(verbose: bool = False, skipProcessing: bool = True, filePath: str = "./DefaultUsers", dataFile: str = "defaultUserData.npz"):
     if verbose: print("Main Code Beginning!")
