@@ -142,17 +142,47 @@ def trainVoiceAI(verbose: bool = False, dataFile: str = "defaultUserData.npz"):
     predictedUsers=lb.inverse_transform(np.argmax(predictions,axis=1))
     print(predictedUsers)
 
-def main(verbose: bool = False, skipProcessing: bool = True, filePath: str = "./DefaultUsers", dataFile: str = "defaultUserData.npz"):
+    model.save("./TestingModel.keras")
+
+def loadModel(verbose: bool = False, modelPath: str = "./TestingModel.keras", dataFile: str = "defaultUserData.npz"):
+    if verbose: print("Importing Libraries")
+    from keras.models import load_model
+    from sklearn.preprocessing import LabelEncoder, StandardScaler
+    
+    if verbose: print("Importing Model")
+    model = load_model(modelPath)
+
+    if verbose: print("Importing Data Set")
+    loadedData = np.load(dataFile, allow_pickle=True)
+
+    if verbose: print("Encoding and Scaling Arrays")
+    
+    #NOTE: THIS PORTION TAKES A WHILE TO IMPORT AND PERFORM, 
+    #INVESTIGATE SAVING THE TRANSFORMED DATA FOR LATER AS ITS OWN FILE?
+    lb = LabelEncoder()
+    lb.fit_transform(loadedData["trainNameArray"]) #MUST BE TRAIN NAME ARRAY OR VALID NAME ARRAY
+    # Scale data arrays
+    ss = StandardScaler()
+    testDataArray = ss.fit_transform(loadedData["testDataArray"]) #CAN BE ANY OF THE DATA ARRAYS TO FIT SUCCESSFULLY
+    
+    # We get our predictions from the test data
+    predictions=model.predict(testDataArray)
+    predictedUsers=lb.inverse_transform(np.argmax(predictions,axis=1))
+    print(predictedUsers)
+
+def main(verbose: bool = False, skipProcessing: bool = True, skipTraining: bool = True, filePath: str = "./DefaultUsers", dataFile: str = "defaultUserData.npz"):
     if verbose: print("Main Code Beginning!")
 
     if skipProcessing == False:
         if verbose: print("Starting Data Processing")
         userDataPreProcessing(verbose=verbose, filePath=filePath, saveFile=dataFile)
-    
-    if verbose: print("Starting Training Function")
-    trainVoiceAI(verbose=verbose,dataFile=dataFile)
+    if skipTraining == False:
+        if verbose: print("Starting Training Function")
+        trainVoiceAI(verbose=verbose,dataFile=dataFile)
+    if verbose: print("Running Test Data!")
+    loadModel(verbose=verbose)
     
     if verbose: print("Code Complete!")
 
 if __name__ == "__main__":
-    main(verbose=True,skipProcessing=True,filePath="./DefaultUsers", dataFile = "defaultUserData.npz")
+    main(verbose=True,skipProcessing=True, skipTraining = True, filePath="./DefaultUsers", dataFile = "defaultUserData.npz")
