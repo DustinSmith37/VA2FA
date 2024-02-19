@@ -21,6 +21,7 @@ var count = 0; //count to keep track of how many times user recorded audio
 
 var user = "undefined"; //global variable, this gets replaced with the userID later
 
+var passed_message = "";
 
 var NumArr = [1,2,3,4,5]; //number array; this will helps us with the random phrases
 
@@ -36,6 +37,7 @@ startButton.addEventListener("click", startingProcess);
 function changeText(random_phrase) {
 
   document.getElementById('chgtext').innerHTML = random_phrase; //changes the text to the randomly selected phrase
+  passed_message = random_phrase;
 
 }
 
@@ -90,19 +92,19 @@ function randomPhrase(){
 	
 	else if (random_number == 2){
 			
-		random_phrase =	"1, 2 buckle my shoe; 3,4 shut the door; 5,6 pick up some sticks; 7,8 set them straight; 9,10 that's the end.";
+		random_phrase =	"One, two buckle my shoe; three, four shut the door; five, six pick up some sticks; seven, eight set them straight; nine, ten that is the end.";
 			
 	}
 	
 	else if (random_number == 3){
 			
-		random_phrase = "The average distance between the Earth and the Moon is 238,855 miles or 384,400 km.";
+		random_phrase = "The average distance between the Earth and the Moon is a very long distance.";
 			
 	}
 	
 	else if (random_number == 4){
 			
-		random_phrase =	"As of the year 2023, scientists have confirmed there are currently over 6,000 different species of frogs.";
+		random_phrase =	"As of this year, scientists have confirmed there are currently over six thousand different species of frogs.";
 			
 	}
 	
@@ -222,6 +224,7 @@ function createDownloadLink(blob) {
 	var data = new FormData();
     data.append('file', blob); //Post method sending audio blob and userID
 	data.append("userID", user);
+	data.append("message",passed_message);
 
     // Make the HTTP request
     var oReq = new XMLHttpRequest();

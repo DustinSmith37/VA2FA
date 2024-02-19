@@ -18,8 +18,11 @@ session_start();
 
 $userdata = $_SESSION["userID"];
 
+$message = $_SESSION["message"];
 
-$command1 = "test ".$userdata;
+$command_Message = ' "p='.$message.'"';
+
+$command1 = "test ".$userdata." ".$command_Message;
 
 
 	

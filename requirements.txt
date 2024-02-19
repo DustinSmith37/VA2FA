@@ -1,0 +1,13 @@
+os
+pandas
+numpy
+sys
+librosa
+tensorflow
+silence_tensorflow
+keras
+scikit-learn
+matplotlib
+string
+vosk
+SpeechRecognition

@@ -22,6 +22,8 @@ var count = 0; //count to keep track of how many times user recorded audio
 var user = "undefined"; //global variable, this gets replaced with the userID later
 
 
+
+
 var NumArr = [1,2,3,4,5, 6, 7, 8, 9, 10]; //number array; this will helps us with the random phrases
 
 //add events to those 2 buttons
@@ -33,7 +35,8 @@ startButton.addEventListener("click", startingProcess);
 function changeText(random_phrase) {
 
   document.getElementById('chgtext').innerHTML = random_phrase; //changes the text to the randomly selected phrase
-
+ 
+	
 }
 
 function Return_to_Login_Page(){

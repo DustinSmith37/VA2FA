@@ -169,7 +169,9 @@ def trainVoiceAI(verbose: bool = False, numDefault: int = 30, userID: str = "0")
     if verbose: model.summary()
     if verbose: print("Settings Saved, Launching Training")
 
-    history = model.fit(defaultUserDataMerged["trainDataArray"],defaultUserDataMerged["trainNameArray"], batch_size=256, epochs=100, validation_data=(defaultUserDataMerged["validDataArray"], defaultUserDataMerged["validNameArray"]), callbacks=[early_stop])
+    history = model.fit(defaultUserDataMerged["trainDataArray"],defaultUserDataMerged["trainNameArray"], batch_size=256, epochs=100, \
+                        validation_data=(defaultUserDataMerged["validDataArray"], defaultUserDataMerged["validNameArray"]), \
+                        callbacks=[early_stop], shuffle=True)
 
     if verbose: print("Training Complete, Launching Results")
 
@@ -191,7 +193,7 @@ def trainVoiceAI(verbose: bool = False, numDefault: int = 30, userID: str = "0")
 
     model.save("./uploads/"+userID+"/"+userID+"TestingModel.keras")
 
-def testData(verbose: bool = False, userID: str = "0", passphrase: str = "Put on your shirt; put on your pants; put on your socks; tie your shoes; grab a jacket; and enjoy your day.", minAccuracy: str = "50"):
+def testData(verbose: bool = False, userID: str = "0", passphrase: str = "DEFAULT PASSPHRASE IF YOU SEE THIS IT BROKE", minAccuracy: str = "50"):
     if verbose: print("Importing Libraries")
     from string import punctuation
     import speech_recognition as sr
@@ -203,12 +205,13 @@ def testData(verbose: bool = False, userID: str = "0", passphrase: str = "Put on
     from sklearn.preprocessing import LabelEncoder, StandardScaler
 
     if verbose: print("Beginning Speech to Text Confirmation")
-
+    f = open("test.txt", "w")
+    f.write(passphrase)
+    f.close()
     passphrase = passphrase.lower()
     passphrase = passphrase.translate(str.maketrans('', '', punctuation))
     slicedPassphrase = passphrase.split() #split given passphrase into individual words
     if verbose: print(slicedPassphrase)
-
     r = sr.Recognizer()
     with sr.AudioFile("./uploads/"+userID+"/"+"FILE_TO_BE_USED.flac") as source:
         audio = r.record(source)
@@ -269,7 +272,7 @@ def main():
     verbose = "v" in additionalArgs or "verbose" in additionalArgs
     if verbose: print(operation,userID,additionalArgs)
     
-
+    
     if verbose: print("Main Code Beginning!")
 
     if (operation == "process"): #py -3.11 ./audioProcess.py process [userID]

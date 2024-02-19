@@ -11,7 +11,7 @@ if (!file_exists($file_path)) {  //if the file path doesn't exist, create it
 
 
 
-$new_audio_name = uniqid(.$_POST['userID']."-", true).'.flac'; //new audio name, gives timestamp
+$new_audio_name = uniqid($_POST['userID']."-", true).'.flac'; //new audio name, gives timestamp
 $audio_upload_path = $file_path.'/' .$new_audio_name;
 
 move_uploaded_file($_FILES['file']['tmp_name'], $audio_upload_path); //moves flac file to the location

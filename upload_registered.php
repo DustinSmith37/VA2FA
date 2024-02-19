@@ -1,10 +1,11 @@
 <?php
+session_start();
 
 
 
 $file_path ='uploads/'.$_POST['userID']; //gets path of uploads folder plus userID
 
-
+$_SESSION["message"] = $_POST["message"];
 
 if (!file_exists($file_path)) { //if the file path doesn't exist, create it
     mkdir($file_path, 0770, true);
