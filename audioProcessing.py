@@ -14,7 +14,7 @@ def audioProcessingFromDirectory(verbose=False, filePath: str = "./uploads", use
     fileList = os.listdir(filePath+"/"+userID)
     fileList = [file for file in fileList if ".flac" in file] #drop any non flac files
     fileList = fileList[selection[0]:selection[1]] #only grab the range we are specified, to determine train/valid/test data.
-
+    if verbose: print("Files to process:\n"+str(fileList))
     #load into pandas data frame data structure
     dataframe = pd.DataFrame(fileList)
     # Renaming the column name to file
@@ -63,6 +63,26 @@ def extractFeatures(dataframe, directory):
     tonnetz = np.mean(librosa.feature.tonnetz(y=librosa.effects.harmonic(X), sr=sample_rate).T,axis=0)
     return mfccs, chroma, mel, contrast, tonnetz
 
+def extractFeaturesIndividualFile(fileName):
+    import librosa as librosa
+    import numpy as np
+    # Loads the audio file as a floating point time series and assigns the default sample rate
+    # Sample rate is set to 22050 by default
+    X, sample_rate = librosa.load(fileName, res_type='kaiser_fast')
+    # Generate Mel-frequency cepstral coefficients (MFCCs) from a time series 
+    mfccs = np.mean(librosa.feature.mfcc(y=X, sr=sample_rate, n_mfcc=40).T,axis=0)
+    # Generates a Short-time Fourier transform (STFT) to use in the chroma_stft
+    stft = np.abs(librosa.stft(X))
+    # Computes a chromagram from a waveform or power spectrogram.
+    chroma = np.mean(librosa.feature.chroma_stft(S=stft, sr=sample_rate).T,axis=0)
+    # Computes a mel-scaled spectrogram
+    mel = np.mean(librosa.feature.melspectrogram(y=X, sr=sample_rate).T,axis=0)
+    # Computes spectral contrast
+    contrast = np.mean(librosa.feature.spectral_contrast(S=stft, sr=sample_rate).T,axis=0)
+    # Computes the tonal centroid features (tonnetz)
+    tonnetz = np.mean(librosa.feature.tonnetz(y=librosa.effects.harmonic(X), sr=sample_rate).T,axis=0)
+    return np.concatenate([mfccs, chroma, mel, contrast, tonnetz])
+
 def userDataPreProcessing(verbose: bool = False, filePath: str = "./uploads", userID: str = "0", saveFile: str = "UserData.npz"):
     if verbose: print("Importing Libraries")
 
@@ -93,28 +113,31 @@ def trainVoiceAI(verbose: bool = False, numDefault: int = 30, userID: str = "0")
     #only grab the first x defaultUsers to train with
     defaultUserList=defaultUserList[:numDefault]
 
-    # Load them, first by making a list of the npz files
+    # Load default users first by making a list of the npz files
     defaultUserDataSegmented = [np.load("./DefaultUsers/"+defUserID+"/"+defUserID+"UserData.npz", allow_pickle=True) for defUserID in defaultUserList]
+    #append specific user ID to that list to be stitched in
+    defaultUserDataSegmented.append(np.load("./uploads/"+userID+"/"+userID+"UserData.npz", allow_pickle=True))
     defaultUserDataMerged = {}
     #then merged them together using a dictionary and the keys in the npz arrays. Will access this dictionary as needed later
     for k in defaultUserDataSegmented[0].keys():
         defaultUserDataMerged[k] = np.concatenate(list(d[k] for d in defaultUserDataSegmented))
-    
+
     #saving to directory in the event we need it later
-    np.savez('defaultUserDataMerged.npz', **defaultUserDataMerged)
+    np.savez("./uploads/"+userID+"/"+userID+"FullData.npz", **defaultUserDataMerged)
 
     if verbose: 
         for k,v in defaultUserDataMerged.items():
             print(k,len(v))
 
     if verbose: print("Importing Libraries")
+    from silence_tensorflow import silence_tensorflow
+    silence_tensorflow() #disable tensorflow warnings
     from keras.models import Sequential
-    from keras.layers import Dense, Dropout  #, Activation, Flatten
+    from keras.layers import Dense, Dropout
     from keras.callbacks import EarlyStopping
     import matplotlib.pyplot as plt
     from sklearn.preprocessing import LabelEncoder, StandardScaler
     from keras.src.utils.np_utils import to_categorical
-
 
     if verbose: print("Encoding and Scaling Arrays")
     # Hot encoding names
@@ -138,7 +161,7 @@ def trainVoiceAI(verbose: bool = False, numDefault: int = 30, userID: str = "0")
     model.add(Dropout(0.25))
     model.add(Dense(128, activation = 'relu'))
     model.add(Dropout(0.5))
-    model.add(Dense(numDefault, activation = 'softmax')) #REMEMBER TO MAKE THIS numDefault + 1 in final version!!!!
+    model.add(Dense(numDefault+1, activation = 'softmax')) 
     model.compile(loss='categorical_crossentropy', metrics=['accuracy'], optimizer='adam')
     early_stop = EarlyStopping(monitor='val_loss', min_delta=0, patience=100, verbose=1, mode='auto')
 
@@ -166,47 +189,90 @@ def trainVoiceAI(verbose: bool = False, numDefault: int = 30, userID: str = "0")
     plt.legend(fontsize = 18)
     plt.show()
 
-    model.save("./TestingModel.keras")
+    model.save("./uploads/"+userID+"/"+userID+"TestingModel.keras")
 
-def testData(verbose: bool = False, modelPath: str = "./TestingModel.keras", dataFile: str = "defaultUserDataMerged.npz"):
+def testData(verbose: bool = False, userID: str = "0", passphrase: str = "Put on your shirt; put on your pants; put on your socks; tie your shoes; grab a jacket; and enjoy your day.", minAccuracy: str = "50"):
     if verbose: print("Importing Libraries")
+    from string import punctuation
+    import speech_recognition as sr
+    from vosk import SetLogLevel
+    SetLogLevel(-1)
+    from silence_tensorflow import silence_tensorflow
+    silence_tensorflow() #disable tensorflow warnings
     from keras.models import load_model
     from sklearn.preprocessing import LabelEncoder, StandardScaler
-    
+
+    if verbose: print("Beginning Speech to Text Confirmation")
+
+    passphrase = passphrase.lower()
+    passphrase = passphrase.translate(str.maketrans('', '', punctuation))
+    slicedPassphrase = passphrase.split() #split given passphrase into individual words
+    if verbose: print(slicedPassphrase)
+
+    r = sr.Recognizer()
+    with sr.AudioFile("./uploads/"+userID+"/"+"FILE_TO_BE_USED.flac") as source:
+        audio = r.record(source)
+    speechToTextResults = r.recognize_vosk(audio)[14:-3] #cleave off extra symbols from processing
+    slicedspeechToText = speechToTextResults.split() #split results into individual words
+    if verbose: print(slicedspeechToText)
+
+    #track accuracy, make this tunable later if we want
+    incorrect = 0
+    correct = 0
+    for passphraseWord in slicedPassphrase:
+        if passphraseWord in slicedspeechToText:
+            correct +=1
+        else:
+            incorrect +=1
+    accuracy = 100*correct/(correct+incorrect)
+    if verbose: print("Word Accuracy: %f"%accuracy)
+    if accuracy<int(minAccuracy):
+        print(0)
+        return 0
+
     if verbose: print("Importing Model")
-    model = load_model(modelPath)
+    model = load_model("./uploads/"+userID+"/"+userID+"TestingModel.keras")
 
     if verbose: print("Importing Data Set")
-    defaultUserDataMerged = np.load(dataFile, allow_pickle=True)
+    defaultUserDataMerged = np.load("./uploads/"+userID+"/"+userID+"FullData.npz", allow_pickle=True)
+    fileToTestData = extractFeaturesIndividualFile("./uploads/"+userID+"/FILE_TO_BE_USED.flac")
+    fileToTestData = fileToTestData.reshape(1,-1)
+    #stitch these together
+    testNameArray = np.append(defaultUserDataMerged["testNameArray"], userID)
+    testDataArray = np.append(defaultUserDataMerged["testDataArray"],fileToTestData,axis=0)
 
     if verbose: print("Encoding and Scaling Arrays")
     
     #NOTE: THIS PORTION TAKES A WHILE TO IMPORT AND PERFORM, 
     #INVESTIGATE SAVING THE TRANSFORMED DATA FOR LATER AS ITS OWN FILE?
     lb = LabelEncoder()
-    lb.fit_transform(defaultUserDataMerged["testNameArray"]) #MUST BE TRAIN NAME ARRAY OR VALID NAME ARRAY
+    lb.fit_transform(testNameArray) #MUST BE TRAIN NAME ARRAY OR VALID NAME ARRAY
     # Scale data arrays
     ss = StandardScaler()
-    testDataArray = ss.fit_transform(defaultUserDataMerged["testDataArray"]) #CAN BE ANY OF THE DATA ARRAYS TO FIT SUCCESSFULLY
-    #in order to run on a single data point, use .reshape(1,-1) inside the fit_transform() on the data
-    # [0].reshape(1,-1)
+    testDataArray = ss.fit_transform(testDataArray)
     # We get our predictions from the test data
+    if verbose: print("Predicting...")
     predictions=model.predict(testDataArray)
     predictedUsers=lb.inverse_transform(np.argmax(predictions,axis=1))
-    for i in range(len(defaultUserDataMerged["testNameArray"])):
-        print(predictedUsers[i],defaultUserDataMerged["testNameArray"][i],predictedUsers[i]==defaultUserDataMerged["testNameArray"][i])
+    if verbose: print(predictedUsers)
+    
+    #binary output for sign in, print 1 for pass, print 0 for fail, grabbing the final data point which is our latest test file
+    if (predictedUsers[-1]==userID):
+        print(1)
+    else:
+        print(0)
 
 def main():
     operation = sys.argv[1]
     userID = sys.argv[2]
     additionalArgs = sys.argv[3:]
-    print(operation,userID,additionalArgs)
-    
     verbose = "v" in additionalArgs or "verbose" in additionalArgs
+    if verbose: print(operation,userID,additionalArgs)
+    
 
     if verbose: print("Main Code Beginning!")
 
-    if (operation == "process"):
+    if (operation == "process"): #py -3.11 ./audioProcess.py process [userID]
         if verbose: print("Starting Data Processing")
         userDataPreProcessing(verbose=verbose, userID = userID)
     elif (operation == "defProcess"):
@@ -217,12 +283,31 @@ def main():
         for i in defaultUserList:
             if verbose: print("========================\n%s, directory %s of %s\n========================"% (i,defaultUserList.index(i)+1,len(defaultUserList)))
             userDataPreProcessing(verbose=verbose, filePath = "./DefaultUsers", userID = i)
-    elif (operation == "train"):
+    elif (operation == "train"): #py -3.11 ./audioProcess.py train [userID]
         if verbose: print("Starting Training Function")
-        trainVoiceAI(verbose=verbose, numDefault=int(userID)) #CHANGE FROM DEF=ID WHEN NOT TESTING!!!!
-    elif (operation == "test"):
+
+        for argument in additionalArgs:
+            if argument.isdigit():
+                numDefault = int(argument)
+                break
+        
+        if 'numDefault' in locals():
+            trainVoiceAI(verbose=verbose, numDefault=numDefault, userID=userID)
+        else:
+            trainVoiceAI(verbose=verbose, userID=userID)
+    elif (operation == "test"): #py -3.11 ./audioProcess.py test [userID] [verbose] "p=[passphrase]"
         if verbose: print("Running Test Data")
-        testData(verbose=verbose)
+
+        for argument in additionalArgs:
+            if argument[0:2]=="p=":
+                passphrase = argument[2:]
+                break
+        
+        if 'passphrase' in locals():
+            testData(verbose=verbose, userID = userID, passphrase=passphrase)
+        else:
+            testData(verbose=verbose, userID = userID)
+
     
     if verbose: print("Code Complete!")
 
