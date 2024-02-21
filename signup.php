@@ -9,14 +9,18 @@
 			
 			$email = $_POST['mail']; //gets inputted email and password
 			$password = $_POST['pass'];
+			$passwordhash = password_hash($password, PASSWORD_DEFAULT);
 			
 			if(!empty($email) && !empty($password) && !is_numeric($email))
-				
+				if(strlen($password) < 8) {
+					echo "<script type='text/javascript'> alert('Password must be at least 8 characters long')</script>";
+				}
+				else
 				{
 					
 					$userID = substr($email, 0, 3) . (string)rand(100,999); //creates a userID from the first 3 letters of the email and 3 random numbers
 					
-					$query = "insert into form (email, pass, userID) values ('$email', '$password', '$userID')"; //phrase to insert the email, password, and userID in the database
+					$query = "insert into form (email, passHash, userID) values ('$email', '$passwordhash', '$userID')"; //phrase to insert the email, password, and userID in the database
 					
 					mysqli_query($con, $query); //insert the email, password, and userID in the database
 					
@@ -48,21 +52,18 @@
 </head>
 <body>
 
-	<div class = "signup">
-		<h1>Sign Up</h1>
-		<h4>It's free and only takes a minute</h4>
-		<form method = "POST">
-			<label>Email</label>
-			<input type="email" name = "mail" required>
-			<label>Password</label>
-			<input type="password" name = "pass" required>
-			<input type="submit" name = "" value = "Submit">
-		</form>
-		<p>By clicking the Sign Up button, you agree to our<br>
-		<a href = "">Terms and Condition</a> and <a href="#">Policy Privacy </a>
-		</p>
-		<p>Already have an account? <a href = "login_index.php">Login Here</a></p>
-		
+	<div class = "content">
+		<div class='choice_options'>
+			<h1>Sign Up</h1>
+			<h4>It's free and only takes a minute</h4>
+			<form method = "POST">
+				<input type="email" name = "mail" placeholder = "Email" center rows="20" cols="45" required><br>
+				<input type="password" name = "pass" placeholder = "Password" center rows="20" cols="45" required><br>
+				<input type="submit" class="button" name = "" value = "Submit">
+			</form>
+			
+			<p>Already have an account? <a href = "login_index.php">Login Here</a></p>
+		</div>
 	</div>
 </body>	
 </html>
