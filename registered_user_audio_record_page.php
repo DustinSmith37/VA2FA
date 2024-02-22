@@ -7,14 +7,9 @@ session_start(); //session_start to pass the userID around, used in the stop but
 
 <!DOCTYPE html>
 
-
-
-
-
-
 <html>
     <link rel="shortcut icon" type="image/x-icon" href="favicon.png">
-	<link type="text/css" rel="stylesheet" href="common.css">
+	<link type="text/css" rel="stylesheet" href="style.css">
 	
     <head>
         <title>
@@ -30,43 +25,38 @@ session_start(); //session_start to pass the userID around, used in the stop but
 		
 			<div class='choice_options'>
 				
-				<br></br> 
-				<i class="material-icons" style="font-size: 56px; color:black;">lock_outline</i>
 				
-
-				
+				<i id="lock" class="material-icons" style="font-size: 56px; color:white;">lock_outline</i>
 				<br></br> 
+				<h2> Two Factor Authentication</h2>
 				<div id="chgtext">When ready, press the Start button. You will then be prompted to record yourself reciting a phrase. </div>
-
 				
 				
 				<br></br> 
 				<button id ="startButton" class="button" >Start</button>
 				<br></br>
-				
-				<button id ="recordButton" class="button" >Record</button>
 				<br></br>
-				<button id ="stopButton" data-name= "<?php echo $_SESSION["userID"];?>" class="button" >Stop</button>
-				<br></br>
+				<div class="button-container">
+                	<button id="recordButton" class="button record-button">Record</button>
+					<button id="stopButton" data-name= "<?php echo $_SESSION["userID"];?>" class="button stop-button" >Stop</button>
+            	</div>
 				
+				
+				<br></br>
+				<br></br>
 				<button class="button" onclick="Return_to_Login_Page()">Return</button>
 				
 				<br></br>
 				
-				<h3><u>Recordings:</u></h3>
-				<ol id="recordingsList"></ol>
+				
+				<ol hidden id="recordingsList"></ol>
 				<script src="https://cdn.rawgit.com/mattdiamond/Recorderjs/08e7abd9/dist/recorder.js"></script>
    				<script src="common_registered.js"></script>
 				
 				
 				<p></p>
 				
-				<p></p>
-				
-				
-			<button class="button" onclick="query()">Query</button>
-            <p></p>
-            <textarea id="response" rows="20" cols="45" placeholder="Database Results"></textarea>	
+				<p></p>	
 			
 
 			</div>	

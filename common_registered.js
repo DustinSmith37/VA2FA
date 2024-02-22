@@ -129,7 +129,7 @@ function randomPhrase(){
 
 function startRecording() {
 	console.log("recordButton clicked");
-
+	document.getElementById("lock").style.color = "#3498db";
     var constraints = { audio: true, video:false }
 
     //Disable the record button until we get a success or fail from getUserMedia() 
@@ -176,7 +176,7 @@ function startRecording() {
 
 function stopRecording() {
 	console.log("stopButton clicked");
-	
+	document.getElementById("lock").style.color = "white";
 	//disable the stop button, enable the record too allow for new recordings
 	stopButton.disabled = true;
 	recordButton.disabled = false;
@@ -242,7 +242,7 @@ function createDownloadLink(blob) {
 	
 	user = "undefined";
 	
-	document.getElementById("response").innerHTML = "audio_sent";
+	//document.getElementById("response").innerHTML = "audio_sent";
 	
 	
 		
