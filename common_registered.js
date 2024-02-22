@@ -252,6 +252,8 @@ function createDownloadLink(blob) {
     	stopButton.disabled = true;
 		recordButton.style.display = "none";
 		stopButton.style.display = "none";
+
+		changeText("Processing Audio File, Please be Patient."); 
 		
 		setTimeout(function() {
                 window.location.href="processing_registered_information.php"; //wait half a second before changing pages 

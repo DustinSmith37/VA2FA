@@ -280,7 +280,7 @@ function createDownloadLink(blob) {
 		stopButton.style.display = "none";
 		
 		
-		changeText("Recording Process complete. Press Return to log in officially."); 
+		changeText("Processing Audio Files, Please be Patient."); 
 		
 		
 		setTimeout(function() {

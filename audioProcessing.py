@@ -171,7 +171,7 @@ def trainVoiceAI(verbose: bool = False, numDefault: int = 30, userID: str = "0")
 
     history = model.fit(defaultUserDataMerged["trainDataArray"],defaultUserDataMerged["trainNameArray"], batch_size=256, epochs=100, \
                         validation_data=(defaultUserDataMerged["validDataArray"], defaultUserDataMerged["validNameArray"]), \
-                        callbacks=[early_stop], shuffle=True)
+                        callbacks=[early_stop])
 
     if verbose: print("Training Complete, Launching Results")
 
