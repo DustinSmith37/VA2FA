@@ -16,6 +16,17 @@ var audioContext //audio context to help us record
 var recordButton = document.getElementById("recordButton");
 var stopButton = document.getElementById("stopButton");
 var startButton = document.getElementById("startButton");
+var confirmButton = document.getElementById("confirmButton");
+var denyButton = document.getElementById("denyButton");
+
+
+confirmButton.disabled = true; //removes start button
+confirmButton.style.display = "none";
+denyButton.disabled = true; //removes start button
+denyButton.style.display = "none";
+
+
+
 
 var count = 0; //count to keep track of how many times user recorded audio
 
@@ -30,6 +41,8 @@ var NumArr = [1,2,3,4,5, 6, 7, 8, 9, 10]; //number array; this will helps us wit
 recordButton.addEventListener("click", startRecording);
 stopButton.addEventListener("click", stopRecording);
 startButton.addEventListener("click", startingProcess);
+confirmButton.addEventListener("click", confirmAudio);
+denyButton.addEventListener("click", denyAudio);
 
 
 function changeText(random_phrase) {
@@ -107,7 +120,7 @@ function randomPhrase(){
 	
 	else if (random_number == 5){
 			
-		random_phrase =	"As of the year 2023, scientists have confirmed there are currently over 6,000 different species of frogs.";
+		random_phrase =	"As of the year 2018, scientists have ree.";
 			
 	}
 	
@@ -220,6 +233,8 @@ function stopRecording() {
 	//document.getElementById("response").innerHTML = name;
 	
 	//create the wav blob and pass it on to createDownloadLink
+	
+	
 	rec.exportWAV(createDownloadLink);
 }
 
@@ -242,10 +257,70 @@ function createDownloadLink(blob) {
 	//add the new audio and a elements to the li element 
     li.appendChild(au);
 
-    li.appendChild(link);
+    //li.appendChild(link);
     //add the li element to the ordered list 
     recordingsList.appendChild(li);
 	
+	
+	//recordingsList.removeChild(li);
+	
+	stopButton.disabled = true; //removes stop button
+	stopButton.style.display = "none";
+	
+	recordButton.disabled = true; //removes record button
+	recordButton.style.display = "none";
+	
+	
+	
+	confirmButton.disabled = false; 
+	confirmButton.style.display = "unset"; //brings confirm and deny button back and visible 
+	denyButton.disabled = false; 
+	denyButton.style.display = "unset";
+	
+	//display text to ask if the individual wants to use this audio or not
+	document.getElementById('Confirm_Text').innerHTML = "Are you satisfied with your recording? If so, click confirm. If not, click deny. Note: Pressing deny will generate a new phrase in which you will need to record in the former's place.".bold();
+	
+	
+}
+
+
+function switchbuttons(){
+	
+	
+	
+	stopButton.disabled = false; //brings stop button back
+	stopButton.style.display = "unset";
+	
+	recordButton.disabled = false; //brings record button back
+	recordButton.style.display = "unset";
+	
+	confirmButton.disabled = true; //removes confirm button
+	confirmButton.style.display = "none";
+	denyButton.disabled = true; //removes deny button
+	denyButton.style.display = "none";
+	
+	
+	document.getElementById('Confirm_Text').innerHTML = "";
+	
+	const element = document.getElementById("recordingsList"); //removes audio play back on page
+	while (element.firstChild) {
+		element.removeChild(element.firstChild);
+	}
+
+	
+}
+
+function confirmAudio() {
+	
+	switchbuttons();
+	
+
+	rec.exportWAV(sendOFF); //sends audio data off
+	
+}
+
+
+function sendOFF(blob) {
 	
 	var data = new FormData();
     data.append('file', blob); //sends audio blob and userID in post request to unpload_unregistered page
@@ -267,7 +342,7 @@ function createDownloadLink(blob) {
 	
 	user = "undefined"; //changes global variable back to undefined
 	
-	//document.getElementById("response").innerHTML = "audio_sent";
+	
 	
 	
 	if(count == 11){ //currently, once 11 audios are recorded the page will change
@@ -289,7 +364,21 @@ function createDownloadLink(blob) {
 			
 	};
 	
+	
 }
+
+function denyAudio() {
+	
+	switchbuttons();
+	
+	
+	count--;
+	randomPhrase();
+	
+	user = "undefined"; //changes global variable back to undefined
+	
+}
+
 
 function query() {
     
