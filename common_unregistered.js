@@ -35,7 +35,7 @@ var user = "undefined"; //global variable, this gets replaced with the userID la
 
 
 
-var NumArr = [1,2,3,4,5, 6, 7, 8, 9, 10]; //number array; this will helps us with the random phrases
+
 
 //add events to those 2 buttons
 recordButton.addEventListener("click", startRecording);
@@ -63,104 +63,34 @@ function startingProcess() {
 	startButton.disabled = true; //removes start button
 	startButton.style.display = "none";
 	
-	let currentIndex = NumArr.length,  randomIndex;
-
-  // While there remain elements to shuffle.
-	while (currentIndex > 0) { //shuffles the entire number array around in a random order
-
-    // Pick a remaining element.
-    randomIndex = Math.floor(Math.random() * currentIndex);
-    currentIndex--;
-
-    // And swap it with the current element.
-    [NumArr[currentIndex], NumArr[randomIndex]] = [
-      NumArr[randomIndex], NumArr[currentIndex]]; 
-  }
-
-	
-	
-	
 	randomPhrase(); //runs random phrase function
 	
 	
 }
 
 
-function randomPhrase(){
-	
-	
-	random_phrase = "";
-	random_number = NumArr[0]; //gets first element in the number array
-	
-	if(random_number == 1){ // series of if statements to determine what the first number in the array is. The first number correlates with a random phrase. 
+async function randomPhrase(){
+	try {
+		// Fetch the file contents
+		const response = await fetch("sentences.txt");
+		const text = await response.text();
 		
+		// Split the text into an array of lines
+		const lines = text.split('\n');
 		
-		random_phrase = "The sky is blue, the grass is green, the sun is yellow, and the stop sign is red.";	
+		// Generate a random index to select a random line
+		const randomIndex = Math.floor(Math.random() * lines.length);
 		
-	}
-	
-	
-	else if (random_number == 2){
-			
-		random_phrase =	"1, 2 buckle my shoe; 3,4 shut the door; 5,6 pick up some sticks; 7,8 set them straight; 9,10 that's the end.";
-			
-	}
-	
-	else if (random_number == 3){
-			
-		random_phrase = "The average distance between the Earth and the Moon is 238,855 miles or 384,400 km.";
-			
-	}
-	
-	else if (random_number == 4){
-			
-		random_phrase =	"As of the year 2023, scientists have confirmed there are currently over 6,000 different species of frogs.";
-			
-	}
-	
-	else if (random_number == 5){
-			
-		random_phrase =	"As of the year 2018, scientists have ree.";
-			
-	}
-	
-	else if (random_number == 6){
-			
-		random_phrase =	"The sunblock was handed to the girl before practice, but the burned skin was proof she did not apply it.";
-			
-	}
-	
-	else if (random_number == 7){
-			
-		random_phrase =	"The gruff old man sat in the back of the bait shop grumbling to himself as he scooped out a handful of worms.";
-			
-	}
-	
-	else if (random_number == 8){
-			
-		random_phrase =	"The father handed each child a roadmap at the beginning of the 2-day road trip and explained it was so they could find their way home.";
-			
-	}
-	
-	else if (random_number == 9){
-			
-		random_phrase =	"It was difficult for Mary to admit that most of her workout consisted of exercising poor judgment.";
-			
-	}
+		// Set random phrase
+		random_phrase = lines[randomIndex];
+	  } catch (error) {
+		console.error('Error reading file:', error);
 		
-	else{
-			
-		random_phrase =	"Put on your shirt; put on your pants; put on your socks; tie your shoes; grab a jacket; and enjoy your day.";
-			
-	}
+	  }
 	
 	
+
 	
-	
-	
-	
-	
-	NumArr.shift(); //shift the array over by 1, get rid of the first number, removing the chance of repeating phrases again. 
 	changeText(random_phrase);
 	count++; //increase count by 1
 	
@@ -338,7 +268,9 @@ function sendOFF(blob) {
 	
 	
 	
-	randomPhrase();
+	if(count < 11){
+		randomPhrase();
+	}
 	
 	user = "undefined"; //changes global variable back to undefined
 	

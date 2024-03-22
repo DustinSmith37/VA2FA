@@ -23,8 +23,6 @@ var user = "undefined"; //global variable, this gets replaced with the userID la
 
 var passed_message = "";
 
-var NumArr = [1,2,3,4,5]; //number array; this will helps us with the random phrases
-
 //add events to those 2 buttons
 recordButton.addEventListener("click", startRecording);
 stopButton.addEventListener("click", stopRecording);
@@ -52,75 +50,34 @@ function startingProcess() {
 	startButton.disabled = true; //removes start button
 	startButton.style.display = "none";
 	
-	let currentIndex = NumArr.length,  randomIndex;
-
-  // While there remain elements to shuffle.
-	while (currentIndex > 0) { //shuffles the entire number array around in a random order
-
-    // Pick a remaining element.
-    randomIndex = Math.floor(Math.random() * currentIndex);
-    currentIndex--;
-
-    // And swap it with the current element.
-    [NumArr[currentIndex], NumArr[randomIndex]] = [
-      NumArr[randomIndex], NumArr[currentIndex]]; 
-  }
-
-	
-	
-	
 	randomPhrase(); //runs random phrase function
 	
 	
 }
 
 
-function randomPhrase(){
-	
-	 
-	
-	random_phrase = "";
-	random_number = NumArr[0]; //gets first element in the number array
-	
-	if(random_number == 1){ // series of if statements to determine what the first number in the array is. The first number correlates with a random phrase. 
+async function randomPhrase(){
+	try {
+		// Fetch the file contents
+		const response = await fetch("sentences.txt");
+		const text = await response.text();
 		
+		// Split the text into an array of lines
+		const lines = text.split('\n');
 		
-		random_phrase = "The sky is blue, the grass is green, the sun is yellow, and the stop sign is red.";	
+		// Generate a random index to select a random line
+		const randomIndex = Math.floor(Math.random() * lines.length);
 		
-	}
+		// Set random phrase
+		random_phrase = lines[randomIndex];
+	  } catch (error) {
+		console.error('Error reading file:', error);
+		
+	  }
 	
 	
-	else if (random_number == 2){
-			
-		random_phrase =	"One, two buckle my shoe; three, four shut the door; five, six pick up some sticks; seven, eight set them straight; nine, ten that is the end.";
-			
-	}
+
 	
-	else if (random_number == 3){
-			
-		random_phrase = "The average distance between the Earth and the Moon is a very long distance.";
-			
-	}
-	
-	else if (random_number == 4){
-			
-		random_phrase =	"As of this year, scientists have confirmed there are currently over six thousand different species of frogs.";
-			
-	}
-	
-	else{
-			
-		random_phrase =	"Put on your shirt; put on your pants; put on your socks; tie your shoes; grab a jacket; and enjoy your day.";
-			
-	}
-	
-	
-	
-	
-	
-	
-	
-	NumArr.shift(); //shift the array over by 1, get rid of the first number, removing the chance of repeating phrases again. 
 	changeText(random_phrase);
 	count++; //increase count by 1
 	
@@ -237,9 +194,6 @@ function createDownloadLink(blob) {
     oReq.send(data);
 	
 	
-	
-	randomPhrase();
-	
 	user = "undefined";
 	
 	//document.getElementById("response").innerHTML = "audio_sent";
@@ -248,16 +202,15 @@ function createDownloadLink(blob) {
 		
 		
 		
-		recordButton.disabled = true;
-    	stopButton.disabled = true;
-		recordButton.style.display = "none";
-		stopButton.style.display = "none";
-
-		changeText("Processing Audio File, Please be Patient."); 
-		
-		setTimeout(function() {
-                window.location.href="processing_registered_information.php"; //wait half a second before changing pages 
-            }, 500);
+	recordButton.disabled = true;
+    stopButton.disabled = true;
+	recordButton.style.display = "none";
+	stopButton.style.display = "none";
+	changeText("Processing Audio File, Please be Patient."); 
+	
+	setTimeout(function() {
+            window.location.href="processing_registered_information.php"; //wait half a second before changing pages 
+        }, 500);
 		
 		
 }
